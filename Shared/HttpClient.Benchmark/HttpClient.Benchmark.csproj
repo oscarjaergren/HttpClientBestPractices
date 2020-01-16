@@ -11,10 +11,10 @@
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.12.0" />
     <PackageReference Include="BenchmarkDotNet.Diagnostics.Windows" Version="0.12.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.1.0-preview3.19553.2" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.1.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.9.5" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="3.1.0-preview3.19553.2" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="3.1.0-preview3.19553.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="3.1.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="3.1.0" />
   </ItemGroup>
 
   <ItemGroup>
