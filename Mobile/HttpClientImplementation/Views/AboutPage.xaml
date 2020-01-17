@@ -3,13 +3,13 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:d="http://xamarin.com/schemas/2014/forms/design"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewModels="clr-namespace:HttpClientImplementation.ViewModels;assembly=HttpClientImplementation"
              mc:Ignorable="d"
-             x:Class="HttpClient.Views.AboutPage"
-             xmlns:vm="clr-namespace:HttpClient.ViewModels"
+             x:Class="HttpClientImplementation.Views.AboutPage"
              Title="{Binding Title}">
     
     <ContentPage.BindingContext>
-        <vm:AboutViewModel />
+        <viewModels:AboutViewModel />
     </ContentPage.BindingContext>
     
     <ContentPage.Resources>

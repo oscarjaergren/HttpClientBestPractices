@@ -7,8 +7,8 @@
     <ProjectTypeGuids>{EFBA0AD7-5A72-4C68-AF49-83D382785DCF};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <TemplateGuid>{6968b3a4-1835-46a3-ac5c-1ae33b475983}</TemplateGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>HttpClient.Droid</RootNamespace>
-    <AssemblyName>HttpClient.Android</AssemblyName>
+    <RootNamespace>HttpClientImplementation.Droid</RootNamespace>
+    <AssemblyName>HttpClientImplementation.Android</AssemblyName>
     <AndroidApplication>True</AndroidApplication>
     <AndroidResgenFile>Resources\Resource.designer.cs</AndroidResgenFile>
     <AndroidResgenClass>Resource</AndroidResgenClass>
@@ -92,10 +92,6 @@
     <ProjectReference Include="..\HttpClientImplementation\HttpClientImplementation.csproj">
       <Project>{A5D5CD94-0380-4B72-8125-7DBDCC89702F}</Project>
       <Name>HttpClientImplementation</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\HttpClient\HttpClient.csproj">
-      <Project>{1302E529-7F40-4DD5-A424-F72DCBD02D32}</Project>
-      <Name>HttpClient</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />

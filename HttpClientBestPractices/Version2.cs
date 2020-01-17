@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -8,44 +7,28 @@ using System.Threading.Tasks;
 
 using Newtonsoft.Json;
 
-namespace HttpClient.Services
+namespace HttpClientBestPractices
 {
-    public class SystemJsonHttpClient : IRequestProvider
+    class Version2
     {
-        public static void SerializeJsonIntoStream(object value, Stream stream)
+        private static JsonSerializer jsonSerializer;
+
+        //Test this method
+        static async Task HttpGetForLargeFileInRightWay()
         {
-            using (var sw = new StreamWriter(stream, new UTF8Encoding(false), 1024, true))
-            using (var jtw = new JsonTextWriter(sw) { Formatting = Formatting.None })
+            using (System.Net.Http.HttpClient client = new System.Net.Http.HttpClient())
             {
-                var js = new JsonSerializer();
-                js.Serialize(jtw, value);
-                jtw.Flush();
+                const string url = "https://github.com/tugberkugurlu/ASPNETWebAPISamples/archive/master.zip";
+                using (HttpResponseMessage response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
+                using (Stream streamToReadFrom = await response.Content.ReadAsStreamAsync())
+                {
+                    string fileToWriteTo = Path.GetTempFileName();
+                    using (Stream streamToWriteTo = File.Open(fileToWriteTo, FileMode.Create))
+                    {
+                        await streamToReadFrom.CopyToAsync(streamToWriteTo);
+                    }
+                }
             }
-        }
-
-        public Task DeleteAsync(Uri uri, string token = "")
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<TResult> GetAsync<TResult>(Uri uri, string token = "")
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<TResult> PostAsync<TResult>(Uri uri, TResult data, string token = "", string header = "")
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<TResult> PostAsync<TResult>(Uri uri, string data, string clientId, string clientSecret)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<TResult> PutAsync<TResult>(Uri uri, TResult data, string token = "", string header = "")
-        {
-            throw new NotImplementedException();
         }
 
         private static HttpContent CreateHttpContent(object content)
@@ -62,6 +45,18 @@ namespace HttpClient.Services
             }
 
             return httpContent;
+        }
+
+        public static void SerializeJsonIntoStream(object value, Stream stream)
+        {
+            using (var sw = new StreamWriter(stream, new UTF8Encoding(false), 1024, true))
+            using (var jtw = new JsonTextWriter(sw) { Formatting = Formatting.None })
+            {
+                jsonSerializer.Serialize(jtw, value);
+                jtw.Flush();
+            }
+
+
         }
 
         // Question 1: Using is not recommend, check perfomance difference of using static or not
@@ -82,5 +77,8 @@ namespace HttpClient.Services
                 }
             }
         }
+
+
+
     }
 }

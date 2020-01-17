@@ -8,7 +8,7 @@ using Xamarin.Forms.Platform.Android;
 
 using Platform = Xamarin.Essentials.Platform;
 
-namespace HttpClient.Droid
+namespace HttpClientImplementation.Droid
 {
     [Activity(
         Label = "HttpClient",
@@ -35,7 +35,6 @@ namespace HttpClient.Droid
 
             base.OnCreate(savedInstanceState);
 
-            Forms.SetFlags("CollectionView_Experimental");
             Platform.Init(this, savedInstanceState);
             Forms.Init(this, savedInstanceState);
             LoadApplication(new App());
