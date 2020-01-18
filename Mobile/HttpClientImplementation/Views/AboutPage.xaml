@@ -9,7 +9,7 @@
              Title="{Binding Title}">
     
     <ContentPage.BindingContext>
-        <viewModels:AboutViewModel />
+        <viewModels:BenchmarkViewModel />
     </ContentPage.BindingContext>
     
     <ContentPage.Resources>

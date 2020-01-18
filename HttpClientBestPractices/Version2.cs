@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -30,6 +31,36 @@ namespace HttpClientBestPractices
                 }
             }
         }
+
+        //public async Task<TResult> PostAsync<TResult>(
+        //    Uri uri,
+        //    string data,
+        //    string clientId,
+        //    string clientSecret,
+        //    CancellationToken cancellationToken)
+        //{
+        //    HttpResponseMessage response;
+        //    using (HttpClient httpClient = CreateHttpClient(string.Empty))
+        //    {
+        //        if (!string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret))
+        //            AddBasicAuthenticationHeader(httpClient, clientId, clientSecret);
+
+        //        var content = new StringContent(data);
+        //        content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
+        //        response = await httpClient.PostAsync(uri, content, cancellationToken).ConfigureAwait(false);
+        //        content.Dispose();
+        //    }
+
+        //    await HandleResponse(response).ConfigureAwait(false);
+        //    string serialized = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+        //    TResult result = await Task.Run(
+        //                         () => System.Text.Json.JsonSerializer.Deserialize<TResult>(serialized, serializerSettings),
+        //                         cancellationToken).ConfigureAwait(false);
+
+        //    return result;
+        //}
+
 
         private static HttpContent CreateHttpContent(object content)
         {

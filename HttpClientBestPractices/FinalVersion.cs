@@ -48,17 +48,14 @@ namespace HttpClientBestPractices
             CancellationToken cancellationToken,
             string token = "")
         {
-            HttpResponseMessage response;
-            using (HttpRequestMessage request = CreateRequest(uri))
-            {
-                using (HttpClient httpClient = CreateHttpClient(token))
-                {
-                    response = await httpClient.SendAsync(
-                                   request,
-                                   HttpCompletionOption.ResponseHeadersRead,
-                                   cancellationToken).ConfigureAwait(false);
-                }
-            }
+            HttpRequestMessage request = CreateRequest(uri);
+
+            HttpClient httpClient = CreateHttpClient(token);
+
+            HttpResponseMessage response = await httpClient.SendAsync(
+                                               request,
+                                               HttpCompletionOption.ResponseHeadersRead,
+                                               cancellationToken).ConfigureAwait(false);
 
             await HandleResponse(response).ConfigureAwait(false);
 
@@ -70,24 +67,24 @@ namespace HttpClientBestPractices
         public static HttpClientHandler GetHttpHandler()
         {
             var handler = new HttpClientHandler
-                              {
-                                  AutomaticDecompression = DecompressionMethods.GZip,
-                                  ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
-                                      {
-                                          if (cert.Issuer.Equals("CN=localhost", StringComparison.Ordinal)) return true;
+            {
+                AutomaticDecompression = DecompressionMethods.GZip,
+                ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
+                    {
+                        if (cert.Issuer.Equals("CN=localhost", StringComparison.Ordinal)) return true;
 
-                                          return errors == SslPolicyErrors.None;
-                                      }
-                              };
+                        return errors == SslPolicyErrors.None;
+                    }
+            };
             return handler;
         }
 
-        public static async Task<TResult> PostStreamAsync<TResult>(
+        public static async Task<TResult> PostAsyncStream<TResult>(
             Uri uri,
             TResult data,
-            CancellationToken cancellationToken,
             string token,
-            string header)
+            string header,
+            CancellationToken cancellationToken)
         {
             HttpClient httpClient = CreateHttpClient(token);
 
@@ -130,7 +127,7 @@ namespace HttpClientBestPractices
             string token = "",
             string header = "")
         {
-            return PostStreamAsync(uri, data, cancellationToken, token, header);
+            return PostAsyncStream(uri, data, token, header, cancellationToken);
         }
 
         /// <summary> Send POST request to API from unauthenticated user </summary>
@@ -148,17 +145,15 @@ namespace HttpClientBestPractices
             string clientSecret,
             CancellationToken cancellationToken)
         {
-            HttpResponseMessage response;
-            using (HttpClient httpClient = CreateHttpClient(string.Empty))
-            {
-                if (!string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret))
-                    AddBasicAuthenticationHeader(httpClient, clientId, clientSecret);
+            HttpClient httpClient = CreateHttpClient(string.Empty);
 
-                var content = new StringContent(data);
-                content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
-                response = await httpClient.PostAsync(uri, content, cancellationToken).ConfigureAwait(false);
-                content.Dispose();
-            }
+            if (!string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret))
+                AddBasicAuthenticationHeader(httpClient, clientId, clientSecret);
+
+            var content = new StringContent(data);
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
+            HttpResponseMessage response = await httpClient.PostAsync(uri, content, cancellationToken).ConfigureAwait(false);
+            content.Dispose();
 
             await HandleResponse(response).ConfigureAwait(false);
             string serialized = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
