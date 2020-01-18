@@ -31,10 +31,10 @@ namespace HttpClientBestPractices
         /// <param name="cancellationToken"> Used to cancel the job </param>
         /// <param name="token"> The token used by the API to authorize and identify. </param>
         /// <returns> The <see cref="Task" />. </returns>
-        public static async Task DeleteRequest(Uri uri, CancellationToken cancellationToken, string token = "")
+        public static Task DeleteRequest(Uri uri, CancellationToken cancellationToken, string token = "")
         {
             HttpClient httpClient = CreateHttpClient(token);
-            await httpClient.DeleteAsync(uri, cancellationToken).ConfigureAwait(false);
+            return httpClient.DeleteAsync(uri, cancellationToken);
         }
 
         /// <summary> Gets data from API in stream form authenticated users </summary>
@@ -62,28 +62,7 @@ namespace HttpClientBestPractices
 
             await HandleResponse(response).ConfigureAwait(false);
 
-            // Prints the data for us in debug mode
-#if DEBUG
-            using (Stream contentStream = await response.Content.ReadAsStreamAsync())
-            using (var reader = new StreamReader(contentStream))
-            {
-                string text = reader.ReadToEnd();
-                Debug.WriteLine("RECEIVED: " + text);
-                return await JsonSerializer.DeserializeAsync<TResult>(
-                           contentStream,
-                           serializerSettings,
-                           cancellationToken);
-            }
-
-#else
-            using (Stream contentStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
-            {
-                return await JsonSerializer.DeserializeAsync<TResult>(
-                           contentStream,
-                           serializerSettings,
-                           cancellationToken);
-            }
-#endif
+            return await DeserializeAsync<TResult>(response, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary> Enables us to connect to sites with localhost as certificate, enables GZIP decompression </summary>
@@ -95,15 +74,33 @@ namespace HttpClientBestPractices
                                   AutomaticDecompression = DecompressionMethods.GZip,
                                   ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
                                       {
-                                          if (cert.Issuer.Equals("CN=localhost", StringComparison.Ordinal))
-                                          {
-                                              return true;
-                                          }
+                                          if (cert.Issuer.Equals("CN=localhost", StringComparison.Ordinal)) return true;
 
                                           return errors == SslPolicyErrors.None;
                                       }
                               };
             return handler;
+        }
+
+        public static async Task<TResult> PostStreamAsync<TResult>(
+            Uri uri,
+            TResult data,
+            CancellationToken cancellationToken,
+            string token,
+            string header)
+        {
+            HttpClient httpClient = CreateHttpClient(token);
+
+            if (!string.IsNullOrEmpty(header)) AddHeaderParameter(httpClient, header);
+
+            var content = new StringContent(JsonSerializer.Serialize(data, serializerSettings));
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+            HttpResponseMessage response = await httpClient.PostAsync(uri, content, cancellationToken);
+
+            await HandleResponse(response);
+
+            return await DeserializeAsync<TResult>(response, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary> Returns the static method </summary>
@@ -133,7 +130,7 @@ namespace HttpClientBestPractices
             string token = "",
             string header = "")
         {
-            throw new NotImplementedException();
+            return PostStreamAsync(uri, data, cancellationToken, token, header);
         }
 
         /// <summary> Send POST request to API from unauthenticated user </summary>
@@ -155,9 +152,7 @@ namespace HttpClientBestPractices
             using (HttpClient httpClient = CreateHttpClient(string.Empty))
             {
                 if (!string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret))
-                {
                     AddBasicAuthenticationHeader(httpClient, clientId, clientSecret);
-                }
 
                 var content = new StringContent(data);
                 content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
@@ -168,13 +163,38 @@ namespace HttpClientBestPractices
             await HandleResponse(response).ConfigureAwait(false);
             string serialized = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-            var result = await Task.Run(() => JsonSerializer.Deserialize<TResult>(serialized, serializerSettings), cancellationToken)
-                             .ConfigureAwait(false);
+            TResult result = await Task.Run(
+                                 () => JsonSerializer.Deserialize<TResult>(serialized, serializerSettings),
+                                 cancellationToken).ConfigureAwait(false);
 
             return result;
         }
 
-        /// <summary> The create http client. </summary>
+        /// <summary> The add basic authentication header. </summary>
+        /// <param name="httpClient"> The http client. </param>
+        /// <param name="clientId"> The client id. </param>
+        /// <param name="clientSecret"> The client secret.</param>
+        private static void AddBasicAuthenticationHeader(HttpClient httpClient, string clientId, string clientSecret)
+        {
+            if (httpClient == null) return;
+
+            if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(clientSecret)) return;
+
+            httpClient.DefaultRequestHeaders.Authorization = new BasicAuthenticationHeaderValue(clientId, clientSecret);
+        }
+
+        private static void AddHeaderParameter(HttpClient httpClient, string parameter)
+        {
+            if (httpClient == null)
+                return;
+
+            if (string.IsNullOrEmpty(parameter))
+                return;
+
+            httpClient.DefaultRequestHeaders.Add(parameter, Guid.NewGuid().ToString());
+        }
+
+        /// <summary> Creates an http client with token and automatically unzips Gzip files </summary>
         /// <param name="token"> The token default value is empty. </param>
         /// <returns> The <see cref="HttpClient" /> </returns>
         private static HttpClient CreateHttpClient(string token = "")
@@ -197,6 +217,38 @@ namespace HttpClientBestPractices
             return new HttpRequestMessage(HttpMethod.Get, uri);
         }
 
+        /// <summary> Deserialize Json streams </summary>
+        /// <param name="response"> The message we got to deserialize </param>
+        /// <param name="cancellationToken"> Cancellation settings depending on request </param>
+        /// <typeparam name="TResult"> Generic parameter </typeparam>
+        /// <returns> The <see cref="Task" />. we return the task </returns>
+        private static async Task<TResult> DeserializeAsync<TResult>(
+            HttpResponseMessage response,
+            CancellationToken cancellationToken)
+        {
+#if DEBUG
+            using (Stream contentStream = await response.Content.ReadAsStreamAsync())
+            using (var reader = new StreamReader(contentStream))
+            {
+                string text = reader.ReadToEnd();
+                Debug.WriteLine("RECEIVED: " + text);
+                return await JsonSerializer.DeserializeAsync<TResult>(
+                           contentStream,
+                           serializerSettings,
+                           cancellationToken);
+            }
+
+#else
+            using (Stream contentStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+            {
+                return await JsonSerializer.DeserializeAsync<TResult>(
+                           contentStream,
+                           serializerSettings,
+                           cancellationToken);
+            }
+#endif
+        }
+
         /// <summary>
         ///     Handles the response via HTTP via checking if the Https call was valid.
         ///     If not throws exception.
@@ -213,25 +265,6 @@ namespace HttpClientBestPractices
 
                 throw new ServiceAuthenticationException(response.StatusCode, content);
             }
-        }
-
-        /// <summary> The add basic authentication header. </summary>
-        /// <param name="httpClient"> The http client. </param>
-        /// <param name="clientId"> The client id. </param>
-        /// <param name="clientSecret"> The client secret.</param>
-        private void AddBasicAuthenticationHeader(HttpClient httpClient, string clientId, string clientSecret)
-        {
-            if (httpClient == null)
-            {
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(clientSecret))
-            {
-                return;
-            }
-
-            httpClient.DefaultRequestHeaders.Authorization = new BasicAuthenticationHeaderValue(clientId, clientSecret);
         }
     }
 }
